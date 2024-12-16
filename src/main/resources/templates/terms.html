@@ -97,13 +97,39 @@
 
     </style>
 </head>
-<body>]
+<body>
+
+<div class="nav-tabs">
+    <a th:href="'https://www.google.com'" class="tab">모니터링</a>
+    <a th:href="@{/admin/pdf}" class="tab">PDF 등록하기</a>
+    <a th:href="@{/admin/insurance}" class="tab">보험</a>
+    <a th:href="@{/admin/terms}" class="tab">특약</a>
+</div>
+
+<!--<div class="nav-tabs">-->
+<!--    <a th:each="result : ${insuranceStats}"-->
+<!--       th:href="@{'/admin/terms?resultsId=' + ${result.insuranceId}}"-->
+<!--       class="tab"-->
+<!--       th:text="${result.insuranceId}">Insurance</a>-->
+<!--</div>-->
+
 <div class="nav-tabs">
     <a th:each="result : ${insuranceStats}"
-       th:href="@{'/admin/terms?resultsId=' + ${result.id}}"
+       th:href="@{'/admin/terms?insuranceId=' + ${result.insuranceId}}"
+       th:onclick="fetchTermStats([[${result.insuranceId}]])"
        class="tab"
        th:text="${result.insuranceId}">Insurance</a>
 </div>
+
+<!--<div id="termStats">-->
+<!--    <div th:fragment="termStatsFragment">-->
+<!--        <ul>-->
+<!--            <li th:each="term : ${termStats}">-->
+<!--                <span th:text="${term.termId}"></span> - <span th:text="${term.count}"></span>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</div>-->
 
 <p>총 추천 수: <span id="totalCount">0</span></p>
 
@@ -111,17 +137,20 @@
     <canvas id="termsPieChart"></canvas>
 </div>
 
-<script>
-    const dataSets = {
-        terms: /*[[${termStats}]]*/
-    };
 
-    function updateChart(chart, data, labels, totalCount) {
-        chart.data.labels = labels;
-        chart.data.datasets[0].data = data;
-        document.getElementById('totalCount').innerText = totalCount;
-        chart.update();
-    }
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const dataSets = {
+        insurance: [[${insuranceStats}]],
+        terms: [[${termStats}]]
+    };
+    /*]]>*/
+</script>
+
+<script>
+    // const dataSets = {
+    //     terms: [[${termStats}]]
+    // };
 
     const ctx = document.getElementById('termsPieChart').getContext('2d');
     const chart = new Chart(ctx, {
@@ -142,27 +171,56 @@
         }
     });
 
+    function updateChart(chart, data, labels, totalCount) {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = data;
+        document.getElementById('totalCount').innerText = totalCount;
+        chart.update();
+    }
+
+    function fetchTermStats(insuranceId) {
+        fetch(`/terms/data?insuranceId=${insuranceId}`)
+            .then(response => response.json())  // 서버에서 termStats를 JSON 형식으로 받음
+            .then(data => {
+                const termStats = data.termStats;  // 서버에서 받은
+                console.log(termStats);
+                const labels = termStats.map(term => term.termId);
+                const chartData = termStats.map(term => term.count);
+                const totalCount = chartData.reduce((sum, count) => sum + count, 0);  // 총 추천 수 계산
+
+                // 차트 업데이트
+                updateChart(chart, chartData, labels, totalCount);
+            })
+            .catch(error => {
+                console.error('Error fetching term stats:', error);
+            });
+    }
+
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
+            const insuranceId = tab.getAttribute('data-id');
+            fetchTermStats(insuranceId);
 
-            const resultsId = tab.getAttribute('data-id');
-            const selectedData = dataSets[resultsId];
-            const labels = selectedData.map(stat => stat.termId);
-            const data = selectedData.map(stat => stat.count);
-            const totalCount = data.reduce((a, b) => a + b, 0);
+            // const resultsId = tab.getAttribute('data-id');
+            // const selectedData = dataSets[resultsId];
+            // const labels = selectedData.map(stat => stat.termId);
+            // const data = selectedData.map(stat => stat.count);
+            // const totalCount = data.reduce((a, b) => a + b, 0);
 
             updateChart(chart, data, labels, totalCount);
         });
     });
 
     // 초기화: 기본 특약 데이터 로드
+    // fetchTermStats('defaultInsuranceId');
     const initialData = dataSets['terms'];
     const labels = initialData.map(stat => stat.termId);
     const data = initialData.map(stat => stat.count);
     const totalCount = data.reduce((a, b) => a + b, 0);
     updateChart(chart, data, labels, totalCount);
+
 </script>
 
 </body>

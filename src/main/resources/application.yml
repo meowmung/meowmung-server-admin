@@ -6,9 +6,9 @@ spring:
       max-file-size: 50MB
       max-request-size: 50MB
   datasource:
-    url: jdbc:mysql://localhost:3306/final
+    url: jdbc:mysql://localhost:3306/insurance
     username: root
-    password: 1234
+    password: jung8728
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -34,3 +34,14 @@ server:
 #    max-http-form-post-size:
 #logging:level.org.springframework.web=DEBUG
 #logging.level.org.springframework.web.multipart=DEBUG
+
+jwt:
+  secret: rlarrkaksruemfkddldmldurtmqdlekee
+
+aws:
+  s3:
+    bucket-name: "hk-project-1/meowmung-insurance/data/pdf"
+    region: "ap-northeast-2"
+  credentials:
+    access-key: "AKIARRVGOJHT5YNF2WVD"
+    secret-key: "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"
