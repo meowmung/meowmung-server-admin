@@ -2,12 +2,13 @@ package com.example.admin.controller;
 
 import com.example.admin.dto.InsuranceCountDTO;
 import com.example.admin.dto.TermCountDTO;
+import com.example.admin.repository.RecommendedTermsRepository;
 import com.example.admin.service.InsuranceService;
 import com.example.admin.service.PdfService;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +25,7 @@ public class InsuranceController {
     private final InsuranceService insuranceService;
     private final PdfService pdfService;
     private static final String UPLOAD_DIR = "uploads/";
+    private final RecommendedTermsRepository recommendedTermsRepository;
 
     @GetMapping("/insurance")
     public String insurance(Model model) {
@@ -44,18 +46,75 @@ public class InsuranceController {
         model.addAttribute("totalCount", totalCount);
         return "insurance";
     }
-    @GetMapping("/terms")
-    public String getAllTerms(@RequestParam("resultsId") Long resultsId, Model model) {
-        // 모든 RecommendedResults와 관련된 termId 데이터 가져오기
-        List<TermCountDTO> termStats = insuranceService.getTopRecommendedTerms(resultsId);
-        model.addAttribute("termStats", termStats);
 
-        // 해당 결과에 대한 보험과 특약 데이터
+    @GetMapping("/terms")
+    public String getAllTerms(@RequestParam(name = "insuranceId", required = false) String insuranceId, Model model) {
         List<InsuranceCountDTO> insuranceStats = insuranceService.findInsuranceCompany();
         model.addAttribute("insuranceStats", insuranceStats);
 
+        List<TermCountDTO> termStats = insuranceService.getAllTermsGroupedByResultsId(insuranceId);
+        for(TermCountDTO term : termStats) {
+            System.out.println(term.getTermId());
+        }
+        model.addAttribute("termStats", termStats);
+
         return "terms";
+        // 모든 RecommendedResults와 관련된 termId 데이터 가져오기
+//        List<String> insuranceIds = new ArrayList<>();
+//        List<InsuranceCountDTO> insuranceStats = insuranceService.findInsuranceCompany();
+//        for (InsuranceCountDTO insuranceCountDTO : insuranceStats) {
+//            insuranceIds.add(insuranceCountDTO.getInsuranceId());
+//            System.out.println(insuranceCountDTO.getInsuranceId());
+//        }
+//        model.addAttribute("insuranceIds", insuranceIds);
+//
+
+        // 모든 RecommendedResults와 관련된 termId 데이터 가져오기
+//        List<TermCountDTO> termStats = insuranceService.getTopRecommendedTerms();
+
+//        List<TermCountDTO> termStats = insuranceService.getAllTermsGroupedByResultsId();
+//        for (TermCountDTO termStat : termStats) {
+//            System.out.println(termStat.getTermId());
+//        }
+//
+//        model.addAttribute("termStats", termStats);
+//
+//        // 해당 결과에 대한 보험과 특약 데이터
+
+
+//        insuranceService.getTopRecommendedTerms();
+//        List<TermCountDTO> termStats = new ArrayList<>();
+//        for (String insuranceId : insuranceIds) {
+//
+//            termStats = recommendedTermsRepository.findAllGroupedByResultsId();
+//        }
+//        model.addAttribute("termStats", termStats);
+
+        // 해당 결과에 대한 보험과 특약 데이터
+//        List<InsuranceCountDTO> insuranceStats = insuranceService.findInsuranceCompany();
+//        model.addAttribute("insuranceStats", insuranceStats);
+
+
     }
+
+
+
+
+
+
+//    @GetMapping("/terms")
+//    public String getAllTerms(@RequestParam("resultsId") Long resultsId, Model model) {
+//        // 모든 RecommendedResults와 관련된 termId 데이터 가져오기
+//        List<TermCountDTO> termStats = insuranceService.getTopRecommendedTerms(resultsId);
+//        model.addAttribute("termStats", termStats);
+//
+//        // 해당 결과에 대한 보험과 특약 데이터
+//        List<InsuranceCountDTO> insuranceStats = insuranceService.findInsuranceCompany();
+//        model.addAttribute("insuranceStats", insuranceStats);
+//
+//        return "terms";
+//    }
+
 
     // 업로드 폴더 생성
     static {
