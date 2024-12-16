@@ -1,0 +1,50 @@
+.chartWrap {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    margin: auto;
+}
+
+.chart {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(#9986dd 0deg, #fbb871 0deg, #bd72ac 0deg, #f599dc 0deg);
+}
+
+.chart-total {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.chart-total-num {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+    /*float: left;*/
+    margin-right: auto;
+    margin-left: auto;
+    /*display: inline-block*/
+}
+
+.chart-container {
+    width: 800px; /* 부모 컨테이너의 크기 */
+    height: 300px;
+    position: relative; /* 캔버스 위치 조정을 위한 스타일 */
+    margin-right: auto;
+    margin-left: auto;
+}
+
+#insurancePieChart {
+    width: 800px !important; /* 크기를 고정 */
+    height: 300px !important;
+}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            background-color: #f1f1f1;
+            padding: 10px 0;
+        }
+
+        .nav-tabs .tab {
+            margin: 0 15px;
+            padding: 10px 15px;
+            text-decoration: none;
+            color: #333;
+            font-size: 16px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .tab.active {
+            color: #007bff;
+            border-color: #007bff;
+            font-weight: bold;
+        }
+
+        .button {
+            display: inline-block;
+            margin: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="nav-tabs">
+    <a th:href="@{/admin/pdf}" class="tab">PDF 등록하기</a>
+    <a th:href="@{/admin/insurance}" class="tab">보험</a>
+    <a th:href="@{/admin/terms}" class="tab">특약</a>
+</div>
+
+
+<h1>관리자 페이지</h1>
+</body>
+</html>

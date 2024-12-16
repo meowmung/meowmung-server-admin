@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Insurance Statistics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* 공통 스타일 */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      text-align: center;
+    }
+
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      background-color: #f1f1f1;
+      padding: 10px 0;
+    }
+
+    .nav-tabs .tab {
+      margin: 0 15px;
+      padding: 10px 15px;
+      text-decoration: none;
+      color: #333;
+      font-size: 16px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .nav-tabs .tab.active {
+      color: #007bff;
+      border-color: #007bff;
+      font-weight: bold;
+    }
+
+    .chart-container {
+      width: 300px;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="nav-tabs">
+  <a th:href="@{/admin/pdf}" class="tab">PDF 등록하기</a>
+  <a th:href="@{/admin/insurance}" class="tab">보험</a>
+  <a th:href="@{/admin/terms}" class="tab">특약</a>
+</div>
+
+<p>총 추천 수: <span id="totalCount">0</span></p>
+<!-- 차트 컨테이너 -->
+<div class="chart-container">
+  <canvas id="insurancePieChart"></canvas>
+</div>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  const dataSets = {
+    insurance: /*[[${insuranceStats}]]*/,
+    terms: /*[[${termStats}]]*/
+  };
+  /*]]>*/
+</script>
+
+<script>
+  function updateChart(chart, data, labels, totalCount) {
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = data;
+    document.getElementById('totalCount').innerText = totalCount;
+    chart.update();
+  }
+
+  const ctx = document.getElementById('insurancePieChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' }
+      }
+    }
+  });
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      const type = tab.getAttribute('data-type');
+      const selectedData = dataSets[type];
+      const labels = selectedData.map(stat => stat.termId || stat.insuranceId);
+      const data = selectedData.map(stat => stat.count);
+      const totalCount = data.reduce((a, b) => a + b, 0);
+
+      updateChart(chart, data, labels, totalCount);
+    });
+  });
+
+  // 초기화: 기본 보험 데이터 로드
+  const initialType = 'insurance';
+  const initialData = dataSets[initialType];
+  const labels = initialData.map(stat => stat.insuranceId);
+  const data = initialData.map(stat => stat.count);
+  const totalCount = data.reduce((a, b) => a + b, 0);
+  updateChart(chart, data, labels, totalCount);
+
+  // 하단 탭 이벤트 리스너 추가
+  document.querySelectorAll('.bottom-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      // 하단 탭 전환 동작 추가 (예: 데이터 요약, 상세보기, 분석 등)
+      console.log(`${tab.getAttribute('data-type')} tab clicked`);
+    });
+  });
+</script>
+</body>
+</html>
