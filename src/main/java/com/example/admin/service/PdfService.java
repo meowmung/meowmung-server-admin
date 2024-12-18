@@ -1,13 +1,11 @@
 package com.example.admin.service;
 
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.example.admin.dto.SendDTO;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,6 +17,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,48 +35,40 @@ public class PdfService {
         }
     }
 
-
     private final AmazonS3 amazonS3Client;
     private final RestTemplate restTemplate;
 
-    @Value("${aws.s3.bucket-name}")
+    @Value("${spring.cloud.aws.s3.bucket-name}")
     private String bucket;
 
-    public String sendData(String key){
+    @Value("${spring.admin.ml-server}")
+    private String mlServer;
 
-        return "good";
-    }
-    public String uploadFileToS3(String key) {
-        System.out.println(key);
+    public ResponseEntity<String> uploadFileToS3(List<Map<String, Object>> terms, String key) {
+        SendDTO sendDTO = SendDTO.builder()
+                .terms(terms)
+                .file_path(key)
+                .build();
 
-        Map<String, Object> requestBody = new HashMap<>();
-        List<Map<String, Object>> terms = new ArrayList<>();
-
-        // Add terms to request body
-        Map<String, Object> term1 = new HashMap<>();
-        term1.put("page", 5);
-        term1.put("term_name", "반려동물의료비");
-        terms.add(term1);
-
-        Map<String, Object> term2 = new HashMap<>();
-        term2.put("page", 9);
-        term2.put("term_name", "반려동물의료비확장보장(슬관절/고관절 탈구");
-        terms.add(term2);
-
-        requestBody.put("terms", terms);
-        requestBody.put("file_path", key);
-
-//        data/pdf/KB_dog.pdf"
-
-        // Set up headers and entity for request
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-
-        // Execute POST request using exchange
-        String uri = "http://192.168.1.101:8008/insurance/admin";
-        return restTemplate.exchange(uri, HttpMethod.POST, request, String.class).getBody();
+        HttpEntity<SendDTO> request = new HttpEntity<>(sendDTO, headers);
+        ResponseEntity<String> response = restTemplate.exchange(mlServer, HttpMethod.POST, request, String.class);
+        return response;
     }
+
+    // s3업로드
+
+    public String upload(MultipartFile file) throws IOException {
+        File uploadFile = convert(file)  // 파일 변환할 수 없으면 에러
+                .orElseThrow(() -> new IllegalArgumentException("error: MultipartFile -> File convert fail"));
+        String fileName = uploadFile.getName();   // S3에 저장된 파일 이름
+        String uploadImageUrl = putS3(uploadFile, fileName); // s3로 업로드
+
+        removeNewFile(uploadFile);
+        return uploadImageUrl;
+    }
+
     private Optional<File> convert(MultipartFile file) throws IOException {
         if (file.isEmpty()) {
             log.error("File is empty");
@@ -98,20 +89,6 @@ public class PdfService {
         }
     }
 
-
-    public String upload(MultipartFile file) throws IOException {
-        File uploadFile = convert(file)  // 파일 변환할 수 없으면 에러
-                .orElseThrow(() -> new IllegalArgumentException("error: MultipartFile -> File convert fail"));
-        System.out.println("upload service 메서드");
-        String fileName = uploadFile.getName();   // S3에 저장된 파일 이름
-        String uploadImageUrl = putS3(uploadFile, fileName); // s3로 업로드
-        System.out.println("-----------------------");
-        System.out.println(uploadImageUrl);
-        System.out.println("-----------------------");
-        removeNewFile(uploadFile);
-        return uploadImageUrl;
-    }
-
     private void removeNewFile(File targetFile) {
         if (targetFile.delete()) {
             log.info("File delete success");
@@ -125,6 +102,5 @@ public class PdfService {
         amazonS3Client.putObject(new PutObjectRequest(bucket, fileName, uploadFile));
         return amazonS3Client.getUrl(bucket, fileName).toString();
     }
-
 
 }
