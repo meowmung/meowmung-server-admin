@@ -2,14 +2,17 @@ package com.example.admin.controller;
 
 import com.example.admin.dto.InsuranceCountDTO;
 import com.example.admin.dto.TermCountDTO;
-import com.example.admin.repository.RecommendedTermsRepository;
 import com.example.admin.service.InsuranceService;
 import com.example.admin.service.PdfService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,14 +21,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Controller
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 public class InsuranceController {
+
+    @Value("${spring.admin.monitoring-url}")
+    private String monitoringUrl;
+
     private final InsuranceService insuranceService;
     private final PdfService pdfService;
     private static final String UPLOAD_DIR = "uploads/";
-    private final RecommendedTermsRepository recommendedTermsRepository;
 
     @GetMapping("/insurance")
     public String insurance(Model model) {
@@ -35,11 +42,6 @@ public class InsuranceController {
         Long totalCount = insuranceStats.stream()
                 .mapToLong(InsuranceCountDTO::getCount)
                 .sum();
-
-        // 특정 RecommendedResults의 특약 데이터
-        Long resultsId = 1L; // 조회할 RecommendedResults ID (예: 기본값)
-//        List<TermCountDTO> termStats = insuranceService.getTopRecommendedTerms(resultsId);
-//        model.addAttribute("termStats", termStats);
 
         // 모델에 데이터 추가
         model.addAttribute("insuranceStats", insuranceStats);
@@ -59,62 +61,7 @@ public class InsuranceController {
         model.addAttribute("termStats", termStats);
 
         return "terms";
-        // 모든 RecommendedResults와 관련된 termId 데이터 가져오기
-//        List<String> insuranceIds = new ArrayList<>();
-//        List<InsuranceCountDTO> insuranceStats = insuranceService.findInsuranceCompany();
-//        for (InsuranceCountDTO insuranceCountDTO : insuranceStats) {
-//            insuranceIds.add(insuranceCountDTO.getInsuranceId());
-//            System.out.println(insuranceCountDTO.getInsuranceId());
-//        }
-//        model.addAttribute("insuranceIds", insuranceIds);
-//
-
-        // 모든 RecommendedResults와 관련된 termId 데이터 가져오기
-//        List<TermCountDTO> termStats = insuranceService.getTopRecommendedTerms();
-
-//        List<TermCountDTO> termStats = insuranceService.getAllTermsGroupedByResultsId();
-//        for (TermCountDTO termStat : termStats) {
-//            System.out.println(termStat.getTermId());
-//        }
-//
-//        model.addAttribute("termStats", termStats);
-//
-//        // 해당 결과에 대한 보험과 특약 데이터
-
-
-//        insuranceService.getTopRecommendedTerms();
-//        List<TermCountDTO> termStats = new ArrayList<>();
-//        for (String insuranceId : insuranceIds) {
-//
-//            termStats = recommendedTermsRepository.findAllGroupedByResultsId();
-//        }
-//        model.addAttribute("termStats", termStats);
-
-        // 해당 결과에 대한 보험과 특약 데이터
-//        List<InsuranceCountDTO> insuranceStats = insuranceService.findInsuranceCompany();
-//        model.addAttribute("insuranceStats", insuranceStats);
-
-
     }
-
-
-
-
-
-
-//    @GetMapping("/terms")
-//    public String getAllTerms(@RequestParam("resultsId") Long resultsId, Model model) {
-//        // 모든 RecommendedResults와 관련된 termId 데이터 가져오기
-//        List<TermCountDTO> termStats = insuranceService.getTopRecommendedTerms(resultsId);
-//        model.addAttribute("termStats", termStats);
-//
-//        // 해당 결과에 대한 보험과 특약 데이터
-//        List<InsuranceCountDTO> insuranceStats = insuranceService.findInsuranceCompany();
-//        model.addAttribute("insuranceStats", insuranceStats);
-//
-//        return "terms";
-//    }
-
 
     // 업로드 폴더 생성
     static {
@@ -126,14 +73,31 @@ public class InsuranceController {
 
     @GetMapping("/pdf")
     public String pdf(Model model) {
-        return "pdf";
+         return "pdf";
+    }
+
+    @GetMapping("/monitoring")
+    public String monitoring(Model model) {
+        return "redirect:" + monitoringUrl ;
     }
 
     @PostMapping("/upload")
-    public String uploadFile(@RequestParam("file") MultipartFile file, Model model) throws IOException {
+    public String uploadFile (@RequestParam("file") MultipartFile file
+                            , @RequestParam("terms") String termsJson) throws IOException {
+        // pdf 파일 처리
+        if (file.isEmpty()) {
+            return "파일이 업로드되지 않았습니다.";
+        }
         String key = "data/pdf/" + file.getOriginalFilename();
-        String s = pdfService.upload(file);
-        pdfService.sendData(key);
+
+        // termsJson을 List<Map<String, Object>> 형태로 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<Map<String, Object>> terms = objectMapper.readValue(termsJson, new TypeReference<List<Map<String, Object>>>() {});
+
+        // s3에 업로드
+        pdfService.upload(file);
+        pdfService.uploadFileToS3(terms, key);
+
         return "pdf";
     }
 }

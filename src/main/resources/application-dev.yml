@@ -1,0 +1,16 @@
+spring:
+  jwt:
+    secret: rlarrkaksruemfkddldmldurtmqdlekee
+
+  cloud:
+    aws:
+      s3:
+        bucket-name: "hk-project-1/meowmung-insurance/data/pdf"
+        region: "ap-northeast-2"
+      credentials:
+        access-key: "AKIARRVGOJHT5YNF2WVD"
+        secret-key: "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"
+
+  admin:
+    monitoring-url: "http://192.168.0.12:3000/dashboards"
+    ml-server: "http://192.168.0.7:8008/insurance/admin"

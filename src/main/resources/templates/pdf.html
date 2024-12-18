@@ -43,12 +43,13 @@
             padding: 20px;
             text-align: center;
         }
+
         .nav-tabs {
-                 display: flex;
-                 justify-content: center;
-                 background-color: #f1f1f1;
-                 padding: 10px 0;
-             }
+            display: flex;
+            justify-content: center;
+            background-color: #f1f1f1;
+            padding: 10px 0;
+        }
 
         .nav-tabs .tab {
             margin: 0 15px;
@@ -65,26 +66,216 @@
             border-color: #007bff;
             font-weight: bold;
         }
+
+        #uploadForm div {
+            margin: 10px;
+        }
+
+        #uploadForm button {
+            margin: 10px;
+        }
     </style>
 </head>
 <body>
 <div class="nav-tabs">
-    <a th:href="'https://www.google.com'" class="tab">모니터링</a>
+    <a th:href="@{/admin/monitoring}" class="tab">모니터링</a>
     <a th:href="@{/admin/pdf}" class="tab">PDF 등록하기</a>
     <a th:href="@{/admin/insurance}" class="tab">보험</a>
     <a th:href="@{/admin/terms}" class="tab">특약</a>
 </div>
-
-
-    <h1 th:text="${welcomeMessage}"></h1>
-    <h1>PDF 파일 업로드</h1>
-    <form id="uploadForm" action="/admin/upload" method="post" enctype="multipart/form-data">
-        <label for="pdfFile">PDF 파일 선택:</label>
+<h1 th:text="${welcomeMessage}"></h1>
+<h1>PDF 파일 업로드</h1>
+<form id="uploadForm" action="/admin/upload" method="POST" enctype="multipart/form-data">
+    <h3>PDF 파일 선택</h3>
+    <div>
+        <label for="pdfFile"></label>
         <input type="file" id="pdfFile" name="file" accept="application/pdf"/>
-        <button type="submit">업로드</button>
-    </form>
-    <div th:if="${error}">
+    </div>
+
+    <h3>특약 추가</h3>
+    <div id="inputTerms">
+        <div class="inputTermsRow">
+            <label>페이지: </label>
+                <input type="number" name="terms[0].page" placeholder="page" required/>
+            <label>특약 이름: </label>
+                <input type="text" name="terms[0].term_name" placeholder="term_name" required/>
+            <button type="button" id="addTermButton">+ 추가</button>
+        </div>
+    </div>
+
+    <button type="submit">업로드</button>
+</form>
+
+<div th:if="${error}">
     <p th:text="${error}" style="color:red;"></p>
 </div>
+
+<script>
+    // 특약 입력 row 생성
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const addButton = document.getElementById("addTermButton");
+        const container = document.getElementById("inputTerms");
+
+        addButton.addEventListener("click", function () {
+            const newIndex = container.children.length;
+
+            const newRow = document.createElement("div");
+            newRow.className = "inputTermsRow";
+            newRow.innerHTML = `
+                <label>페이지: </label>
+                <input type="number" name="terms[${newIndex}].page" placeholder="page" required />
+                <label>특약 이름: </label>
+                <input type="text" name="terms[${newIndex}].term_name" placeholder="term_name" required />
+            `;
+            container.appendChild(newRow);
+        });
+
+        const form = document.getElementById("uploadForm");
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault(); // 기본 폼 제출을 방지
+
+            const formData = new FormData(form); // 폼 데이터를 FormData로 변환
+
+            // terms 데이터를 추가
+            const terms = [];
+            const pages = document.querySelectorAll('[name^="terms["][name$=".page"]');
+            const term_names = document.querySelectorAll('[name^="terms["][name$=".term_name"]');
+
+            pages.forEach((page, index) => {
+                terms.push({
+                    page: page.value,
+                    term_name: term_names[index].value
+                });
+            });
+
+            // terms 데이터를 FormData에 추가
+            formData.append("terms", JSON.stringify(terms));
+
+            // AJAX로 폼 제출
+            fetch("/admin/upload", {
+                method: "POST",
+                body: formData
+            })
+                .then(response => response.text())
+                .then(data => {
+                    console.log("업로드 성공:", data);
+                })
+                .catch(error => {
+                    console.error("업로드 실패:", error);
+                });
+        });
+
+    });
+
+        // 폼 데이터 전송
+
+        // document.getElementById('uploadForm').addEventListener('submit', function (event) {
+        //     event.preventDefault();
+        //
+        //     const formData = new FormData(this);
+        //     const termFieldSets = document.querySelectorAll('.termFieldSet');
+        //
+        //     const terms = [];
+        //     termFieldSets.forEach(fieldSet => {
+        //         const page = fieldSet.querySelector('input[name="page[]"]').value.trim();
+        //         const termName = fieldSet.querySelector('input[name="term_name[]"]').value.trim();
+        //         if (page && termName) {
+        //             terms.push({page, termName});
+        //         }
+        //     });
+
+            // // JSON으로 직렬화하여 추가
+            // formData.append('terms', JSON.stringify(terms));
+            //
+            // formData.forEach((value, key) => {
+            //     console.log(`${key}: ${value}`);
+            // });    // document.getElementById('uploadForm').addEventListener('submit', function (event) {
+            //     event.preventDefault();
+            //
+            //     const formData = new FormData(this);
+            //
+            //     console.log('파일:', document.getElementById("pdfFile").files[0]);
+            //
+            //     // formData.append("file", document.getElementById("file"));
+            //     formData.append("file", document.getElementById("pdfFile").files[0]);
+            //
+            //     // 페이지와 특약 이름을 Map 형태로 수집
+            //     // const terms = [];
+            //     const terms = new Map();
+            //     const pages = document.getElementsByName('page[]');
+            //     const termNames = document.getElementsByName('term_name[]');
+            //
+            //     for (let i = 0; i < pages.length; i++) {
+            //         const page = pages[i].value.trim();
+            //         const termName = termNames[i].value.trim();
+            //
+            //         // 값이 존재하면 배열에 객체로 추가
+            //         if (page && termName) {
+            //             terms.push({ page, termName });
+            //         }
+            //         console.log(terms)
+            //     }
+            //
+            //     console.log(terms.keys());
+            //     console.log(terms.values())
+            //
+            //     // // FormData에 terms 데이터를 JSON 문자열로 추가
+            //     // formData.append('terms', JSON.stringify(terms));
+            //     formData.append('terms', JSON.stringify(terms));
+            //
+            //     console.log('폼 데이터:', formData);
+            //
+            //     // FormData의 모든 값 출력
+            //     formData.forEach((value, key) => {
+            //         console.log(key + ':', value);
+            //     });
+            //
+            //     //
+            //     // for (let i = 0; i < pages.length; i++) {
+            //     //     const page = pages[i].value.trim();
+            //     //     const termName = termNames[i].value.trim();
+            //     //
+            //     //     if (page && termName) {
+            //     //         terms[page] = termName; // 페이지를 키로, 특약 이름을 값으로 추가
+            //     //     }
+            //     // }
+            //
+            //     // for (let i = 0; i < pages.length; i++) {
+            //     //     const page = pages[i].value.trim();
+            //     //     const termName = termNames[i].value.trim();
+            //     //
+            //     //     if (page && termName) {
+            //     //         terms.set(page, termName);
+            //     //         // // FormData에 terms[page]로 추가 (각 항목을 개별적으로 추가)
+            //     //         // formData.append('terms[' + page + ']', termName);
+            //     //     }
+            //     // }
+            //
+            //
+            //     // 서버로 전송할 데이터
+            //     // const data = {
+            //     //     file: formData.get('file') ? '/path/to/your/uploaded/file' : '',// 파일 경로 수정
+            //     //     terms: formData.get('terms')
+            //     // };
+
+        //     fetch('/admin/upload', {
+        //         method: 'POST',
+        //         // headers: {
+        //         //     'Content-Type': 'application/json'
+        //         // },
+        //         body: formData
+        //         // body: JSON.stringify(data)
+        //     })
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             console.log('성공:', data);
+        //         })
+        //         .catch((error) => {
+        //             console.error('에러:', error);
+        //         });
+        // });
+</script>
 </body>
 </html>

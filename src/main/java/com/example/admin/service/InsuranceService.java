@@ -23,16 +23,8 @@ public class InsuranceService {
         return allGroup;
     }
 
-    //    public List<TermCountDTO> getTopRecommendedTerms(Long resultsId) {
-//        return recommendedTermsRepository.findTopRecommendedTermsByResultsId(resultsId);
-//    }
-
     public List<TermCountDTO> getTopRecommendedTerms() {
-        // Fetch the terms associated with the given RecommendedResults ID
         List<RecommendedTerms> terms = recommendedTermsRepository.findAll();
-//        List<TermCountDTO> termCountDTOS = recommendedTermsRepository.findAllGroupedByResultsId();
-
-        // Convert to DTOs if needed
         return terms.stream()
                 .map(term -> new TermCountDTO(term.getRecommendedResults().getInsuranceId(), term.getTermId(), 1L))
                 .collect(Collectors.toList());
